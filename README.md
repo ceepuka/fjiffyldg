@@ -61,7 +61,7 @@ int main() {
     if (!LoadAndScanFile(fm, "test.txt")) {
         unsigned int len = 5;
         const char* s = ReadFileData(fm, 0, len);
-        if (s) std::cout << std::string(s, 5);
+        if (s) std::cout << std::string(s, 5) << endl;
     }
     return 0;  // Automatic cleanup
 }
