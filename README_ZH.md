@@ -32,6 +32,7 @@ https://github.com/ceepuka/fjiffyldg/releases
 
 #### **C API 示例**
 ```c
+#include <stdio.h>
 #include "fjiffyldg.h"
 
 int main() {
@@ -48,6 +49,8 @@ int main() {
 
 #### **C++ RAII 示例**
 ```cpp
+#include <iostream>
+#include <string>
 #include "fjiffyldg.h"
 using namespace Fjiffyldg;
 
@@ -58,7 +61,7 @@ int main() {
     if (!LoadAndScanFile(fm, "test.txt")) {
         unsigned int len = 5;
         const char* s = ReadFileData(fm, 0, len);
-        if (s) printf("%.5s\n", s);
+        if (s) std::cout << std::string(s, 5) << endl;
     }
     return 0;  // 自动清理
 }
