@@ -31,7 +31,7 @@
  * - File line indices and content positions are zero-based.
  * - Never free data pointers obtained from interface functions directly.
  * - C users must pair 'fjiffyldg_create()' with 'fjiffyldg_clear()' for resource management.
- * - Theoretical file size limit: < 8TB
+ * - Theoretical file size limit: < 8EB
  */
 
 #ifdef __cplusplus
