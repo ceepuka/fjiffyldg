@@ -2,9 +2,7 @@
  * Self-contained: U++ source code included internally (BSD License)
  * U++ official website: https://www.ultimatepp.org/
  * 
- * Copyright (c) 2025 Du Jie (@ceepuka). All rights reserved.
- * This software is currently freeware, planned to convert to
- * the BSD 3-Clause open source license on 2026-06-30.
+ * Copyright (c) 2025-2026 Du Jie (@ceepuka). All rights reserved.
 **/
 
 #ifndef _uppFilemodel_fjiffyldg_h_
@@ -72,9 +70,7 @@ FJIFFYLDG_API	void fjiffyldg_clear(fjiffyldg_ptr fm);
  */
 
 // Loads file content while building its line index structure.
-// @return 0 if scanning started successfully and first block loaded.
-// Non-zero error code on failure (refer to error code definitions).
-// Note: Function returns immediately, scanning runs concurrently in background.
+// @return 0 if successful, non-zero error code on failure. (refer to error code definitions)
 FJIFFYLDG_API	int LoadAndScanFile(fjiffyldg_ptr fm, const char *name);
 
 // Loads raw file content (no line structure processing).
@@ -82,18 +78,18 @@ FJIFFYLDG_API	int LoadAndScanFile(fjiffyldg_ptr fm, const char *name);
 FJIFFYLDG_API	int LoadFileOnly(fjiffyldg_ptr fm, const char *name);
 
 // Gets the file loading status.
-// @return 0 if loading system is operational, non-zero error code on failure. (refer to error code definitions)
+// @return 0 if successful, non-zero error code on failure. (refer to error code definitions)
 FJIFFYLDG_API	int GetFileIsLoaded(fjiffyldg_ptr fm);
 
 // Rescans the file's line structure.
 // @param 'offset' Number of bytes to offset the scan start position (typically 0)
-/* @param 'utf' Text encoding scan mode:
- *            0: Default mode (ASCII control character compatible)
+/* @param 'utf' UTF encoding mode:
+ *            0: Default
  *            1: UTF-16LE (Little Endian)
  *            2: UTF-16BE (Big Endian)
  *            3: UTF-32LE (Little Endian)
  *            4: UTF-32BE (Big Endian)
- *           -1: Automatic detection (determined by BOM at file beginning)
+ *           -1: Enable automatic encoding detection
  *           Other: Use default mode
  */
 FJIFFYLDG_API	void RestartScanFile(fjiffyldg_ptr fm, const char *name, long long offset, int utf);
@@ -150,9 +146,9 @@ FJIFFYLDG_API	const char* ReadFileData(fjiffyldg_ptr fm, long long pos, unsigned
  */
 FJIFFYLDG_API	const char* ReadFileDataLLineCut(fjiffyldg_ptr fm, long long *index, long long *bpos, long long *epos, unsigned int *len);
 
-// Reads data starting from a specified byte position within a known line.
+// Reads data starting from a specified byte position.
 /* Reads at most 'len' bytes beginning at 'pos', constrained only by file boundaries.
- * The 'index' parameter must indicate the line containing 'pos'.
+ * The 'index' parameter provides the line containing 'pos' for efficiency.
  *
  * @param 'index' Line index containing 'pos' (hint for optimized lookup)
  * @param 'pos'   Starting byte offset in file (must be ≥ 'line[index].start')
@@ -160,17 +156,17 @@ FJIFFYLDG_API	const char* ReadFileDataLLineCut(fjiffyldg_ptr fm, long long *inde
  *                      returns actual bytes read
  *
  * @return Pointer to data buffer on success, NULL on failure.
+ *
+ * @note 'index' must contain 'pos' but is only used for faster positioning.
  */
 FJIFFYLDG_API	const char* ReadFileDataEndOfLine(fjiffyldg_ptr fm, long long index, long long pos, unsigned int *len);
 
-// Attempts to memory-map the entire file (independent of Load functions).
-// Internal automatically prevents duplicate mappings of same file.
+// Attempts to memory-map the entire file.
 // @param 'bufferSize' [out] Returns the size of the mapped buffer in bytes
 // @return Pointer to mapped data, NULL on failure.
 FJIFFYLDG_API	const char* GetFileMappedHuge(fjiffyldg_ptr fm, const char *fileName, long long *bufferSize);
 
 // Clean up the huge memory-map buffer.
-// Note: fjiffyldg_clear() will also clean all mapping resources.
 FJIFFYLDG_API	void ClearHugeBuffer(fjiffyldg_ptr fm);
 
 /**
@@ -186,7 +182,6 @@ FJIFFYLDG_API	long long GetFileSizeByteCount(const char *name);
 FJIFFYLDG_API	unsigned int CheckTextASCII(const char *text, unsigned int len);
 
 // Validates complete UTF-8 text without truncation.
-// Text must be complete (no truncated multi-byte characters).
 // @return 0 if valid UTF-8, otherwise length of remaining invalid text.
 FJIFFYLDG_API	unsigned int CheckWholeTextUtf8(const char *text, unsigned int len);
 
