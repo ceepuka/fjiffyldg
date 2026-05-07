@@ -1,13 +1,13 @@
-# fjiffyldg
+# Fjiffyldg
 
-> 🆓 Freeware | 📅 Planned Open Source: 2026-06-30 | 📚 [Chinese](README_ZH.md)
+> 🆓 Freeware | 🚀 Open Source | 📅 Opened: 2026-05-07 | 📚 [Chinese](README_ZH.md)
 
-**fjiffyldg** is a cross-platform lightweight library for efficient large file loading and processing. It provides excellent low-level capabilities including random access to terabyte-scale files, intelligent file line index management (fully compatible with UTF-16/32 wide-character text files), and fast UTF-8 text detection. The design philosophy is **meet essential needs, leave no redundancy, with no complex memory management**.
+**Fjiffyldg** is a cross-platform lightweight library for efficient large file loading and processing. It provides excellent low-level capabilities including random access to terabyte-scale files, intelligent file line index management (fully compatible with UTF-16/32 wide-character text files), and fast UTF-8 text detection. The design philosophy is **meet essential needs, leave no redundancy, with no complex memory management**.
 
 <div align="center">
   
-![Status](https://img.shields.io/badge/Status-Freeware-blue)
-![Open Source Plan](https://img.shields.io/badge/Open_Source-2026--06--30-green)
+![Status](https://img.shields.io/badge/Status-Open_Source-brightgreen)
+![License](https://img.shields.io/badge/License-BSD--3--Clause-blue)
 ![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS%20%7C%20Android-orange)
 
 </div>
@@ -79,21 +79,14 @@ int main() {
 
 ## ⚖️ License Status
 
-### 📅 Key Timeline
-- **2025-12-31**: Freeware v1.0.0 release
-- **2026-06-30**: Transition to BSD 3-Clause Open Source License
-- **Afterwards**: Fully open source
-
-### 📊 Permission Comparison Table
-| Permission | Current (Freeware) | Future (BSD 3-Clause) |
-|------------|-------------------|----------------------|
-| **Commercial Use** | ✅ Allowed | ✅ Allowed |
-| **View Source Code** | Partially public* | ✅ Fully public |
-| **Modify Code** | ❌ Not allowed | ✅ Allowed |
-| **Redistribution** | ✅ Binary only | ✅ Source/Binary |
-| **Submit PR** | ❌ Not accepted | ✅ Welcome |
-
-> *Note: U++ framework source code is currently accessible, project's original code is temporarily not public*
+### 📊 Permission Table
+| Permission | Current (BSD 3-Clause) |
+|------------|----------------------|
+| **Commercial Use** | ✅ Allowed |
+| **View Source Code** | ✅ Fully public |
+| **Modify Code** | ✅ Allowed |
+| **Redistribution** | ✅ Source/Binary |
+| **Submit PR** | ✅ Welcome |
 
 ## 🛠️ Technical Architecture
 
@@ -116,11 +109,10 @@ Build Process:
 
 ## 📜 License Information
 
-### Dual License Structure
-| Component | Current License | Future License | Status |
-|-----------|----------------|----------------|--------|
-| **U++ Framework Code** | BSD License | BSD License | Already public |
-| **fjiffyldg Original Code** | Freeware License | BSD 3-Clause | Public on 2026-06-30 |
+### License Structure
+| Component | License | Status |
+|-----------|---------|--------|
+| **Fjiffyldg Original Code** | BSD 3-Clause | ✅ Fully Open Source |
 
 ### Important Files
 - **[LICENSE](LICENSE)** - This project's freeware license
@@ -130,12 +122,7 @@ Build Process:
 
 ## 🤝 Contributing
 
-### Current Phase (Freeware)
-- 🐛 **[Report Issues](https://github.com/ceepuka/fjiffyldg/issues)** - Encounter bugs or abnormal behavior
-- 💡 **[Feature Suggestions](https://github.com/ceepuka/fjiffyldg/wiki)** - Suggest improvements or new feature ideas
-- 📖 **Documentation Improvements** - Help improve usage documentation
-
-### After Open Source (From 2026-06-30)
+### We Welcome Contributions
 - 🔀 **Submit PRs** - Code improvements and new features
 - 🧪 **Write Tests** - Enhance code quality
 - 🌐 **Multi-language Support** - Translations and internationalization
@@ -169,7 +156,8 @@ We encourage all developers to:
 
 <div align="center">
   
-**Copyright Notice**: © 2025 Du Jie (@ceepuka) - This software is currently freeware, planned to open source on June 30, 2026.
+**Copyright Notice**: © 2025-2026 Du Jie (@ceepuka) - The Fjiffyldg Project
+All rights reserved.
 
 [![Star](https://img.shields.io/github/stars/ceepuka/fjiffyldg?style=social)](https://github.com/ceepuka/fjiffyldg)
 [![Watch](https://img.shields.io/github/watchers/ceepuka/fjiffyldg?style=social)](https://github.com/ceepuka/fjiffyldg)

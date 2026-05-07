@@ -1,13 +1,13 @@
-# fjiffyldg
+# Fjiffyldg
 
-> 🆓 Freeware | 📅 Planned Open Source: 2026-06-30 | 📚 [English](README.md)
+> 🚀 开源项目 | 📅 开源时间: 2026-05-07 | 📚 [English](README.md)
 
-**fjiffyldg** 是一个跨平台的轻量级大文件高效加载处理开发库。它提供了随机访问TB级大文件、智能文件行索引管理（完全兼容UTF-16/32宽字符文本文件）、UTF-8文本快速检测等优秀的底层功能。设计理念是**满足刚需，不留冗余，无复杂内存管理**。
+**Fjiffyldg** 是一个跨平台的轻量级大文件高效加载处理开发库。它提供了随机访问TB级大文件、智能文件行索引管理（完全兼容UTF-16/32宽字符文本文件）、UTF-8文本快速检测等优秀的底层功能。设计理念是**满足刚需，不留冗余，无复杂内存管理**。
 
 <div align="center">
   
-![Status](https://img.shields.io/badge/Status-Freeware-blue)
-![Open Source Plan](https://img.shields.io/badge/Open_Source-2026--06--30-green)
+![Status](https://img.shields.io/badge/Status-Open_Source-brightgreen)
+![License](https://img.shields.io/badge/License-BSD--3--Clause-blue)
 ![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS%20%7C%20Android-orange)
 
 </div>
@@ -79,21 +79,14 @@ int main() {
 
 ## ⚖️ 许可证状态
 
-### 📅 关键时间点
-- **2025-12-31**: 发布免费软件 v1.0.0
-- **2026-06-30**: 转换为 BSD 3-Clause 开源许可证
-- **之后**: 完全开源
-
-### 📊 权限对比表
-| 权限 | 当前 (免费软件) | 未来 (BSD 3-Clause) |
-|------|----------------|---------------------|
-| **商业使用** | ✅ 允许 | ✅ 允许 |
-| **查看源码** | 部分公开* | ✅ 完全公开 |
-| **修改代码** | ❌ 不允许 | ✅ 允许 |
-| **重新分发** | ✅ 二进制 | ✅ 源码/二进制 |
-| **提交PR** | ❌ 不接受 | ✅ 欢迎 |
-
-> *注：U++框架源码当前可访问，项目原创代码暂不公开*
+### 📊 权限列表
+| 权限 | 当前 (BSD 3-Clause) |
+|------|---------------------|
+| **商业使用** | ✅ 允许 |
+| **查看源码** | ✅ 完全公开 |
+| **修改代码** | ✅ 允许 |
+| **重新分发** | ✅ 源码/二进制 |
+| **提交PR** | ✅ 欢迎 |
 
 ## 🛠️ 技术架构
 
@@ -116,11 +109,10 @@ int main() {
 
 ## 📜 许可证说明
 
-### 双重许可证结构
-| 组件 | 当前许可证 | 未来许可证 | 状态 |
-|------|------------|------------|------|
-| **U++ 框架代码** | BSD License | BSD License | 已公开 |
-| **fjiffyldg 原创代码** | Freeware License | BSD 3-Clause | 2026-06-30公开 |
+### 许可证结构
+| 组件 | 当前许可证 | 状态 |
+|------|------------|------|
+| **Fjiffyldg 原创代码** | BSD 3-Clause | ✅ 已完全开源 |
 
 ### 重要文件
 - **[LICENSE](LICENSE)** - 本项目免费软件许可证
@@ -130,12 +122,7 @@ int main() {
 
 ## 🤝 参与贡献
 
-### 当前阶段 (免费软件)
-- 🐛 **[报告问题](https://github.com/ceepuka/fjiffyldg/issues)** - 遇到Bug或异常行为
-- 💡 **[功能建议](https://github.com/ceepuka/fjiffyldg/wiki)** - 提出改进或新功能想法
-- 📖 **文档改进** - 帮助完善使用文档
-
-### 开源后 (2026-06-30起)
+### 我们欢迎贡献者
 - 🔀 **提交PR** - 代码改进和新功能
 - 🧪 **编写测试** - 提升代码质量
 - 🌐 **多语言支持** - 翻译和国际化
@@ -169,7 +156,8 @@ int main() {
 
 <div align="center">
   
-**版权声明**: © 2025 Du Jie (@ceepuka) - 本软件当前为免费软件，计划于2026年6月30日开源。
+**版权声明**: © 2025-2026 Du Jie (@ceepuka) - Fjiffyldg软件项目
+版权所有。
 
 [![Star](https://img.shields.io/github/stars/ceepuka/fjiffyldg?style=social)](链接)
 [![Watch](https://img.shields.io/github/watchers/ceepuka/fjiffyldg?style=social)](链接)

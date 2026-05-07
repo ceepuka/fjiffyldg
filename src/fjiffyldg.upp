@@ -1,0 +1,86 @@
+description "Large usually file efficient function interface.\377";
+
+charset "UTF-8";
+
+flags(!MSC) USEMALLOC;
+
+uses(WIN32 | NOSO) plugin/z;
+
+library(!WIN32 & !NOSO) z;
+
+options(MSC) "/D BUILDING_FJIFFYLDG";
+
+options(MSC & SHARED) "/D FJIFFYLDG_SHARED";
+
+options(GCC | CLANG) -DBUILDING_FJIFFYLDG;
+
+options((GCC | CLANG) & SHARED) -DFJIFFYLDG_SHARED;
+
+link(GCC POSIX STACKTRACE) -rdynamic;
+
+file
+	Core/App.cpp,
+	Core/Win32Util.cpp,
+	Core/hheap.cpp,
+	Core/heapdbg.cpp,
+	Core/heaputil.cpp,
+	Core/t.cpp,
+	Core/lib/lz4.c,
+	Core/z.cpp,
+	Core/Huge.cpp,
+	Core/heap.cpp,
+	Core/lheap.cpp,
+	Core/sheap.cpp,
+	Core/Random.cpp,
+	Core/Index.cpp,
+	Core/Vcont.cpp,
+	Core/Uuid.cpp,
+	Core/UnicodeInfo.cpp,
+	Core/Lang.cpp,
+	Core/Utf.cpp,
+	Core/Convert.cpp,
+	Core/Format.cpp,
+	Core/LangInfo.cpp,
+	Core/CharSet.cpp,
+	Core/StringMem.i,
+	Core/FilterStream.cpp,
+	Core/Ini.cpp,
+	Core/StrUtil.cpp,
+	Core/String.cpp,
+	Core/StringFind.cpp,
+	Core/Path.cpp,
+	Core/WString.cpp,
+	Core/Stream.cpp,
+	Core/BlockStream.cpp,
+	Core/FileMapping.cpp,
+	Core/ValueUtil.cpp,
+	Core/Value.cpp,
+	Core/CvFlt.cpp,
+	Core/parser.cpp,
+	Core/mathutil.cpp,
+	Core/TimeDate.cpp,
+	Core/Mem.cpp,
+	Core/Mt.cpp,
+	Core/SplitMerge.cpp,
+	Core/XML.cpp,
+	Core/Xmlize.cpp,
+	Core/JSON.cpp,
+	Core/Util.cpp,
+	Core/Debug.cpp,
+	Core/Log.cpp,
+	FileLineIndex.cpp,
+	uppFilemodel.h,
+	fjiffyldg.cpp,
+	fjiffyldg.h,
+	FileLineIndex.h,
+	FileLineIndex.hpp,
+	uppFilemodel.cpp;
+
+mainconfig
+	"" = "MAKE_LIB",
+	"" = "POSIX LINUX MAKE_LIB",
+	"" = "MAKE_MLIB",
+	"" = "SHARED",
+	"" = "SHARED LINUX",
+	"" = "";
+

@@ -1,68 +1,27 @@
-fjiffyldg - Freeware License Agreement v1.0.0
-Effective Date: 2025-12-31
-Open Source Plan: Will convert to BSD 3-Clause License on 2026-06-30
+Copyright (c) 2025 - 2026, Du Jie (@ceepuka)
+All rights reserved.
 
-The intellectual property and source code of this software are owned by the founder Du Jie (@ceepuka).
-This software is currently freeware, **NOT open source**.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
 
-I. Rights Granted
-1. Free use, copying, and distribution of the complete binary version of this software
-2. Use of this software for personal or commercial purposes (copyright notice must be retained)
-3. Use for evaluation, testing, academic research, and other lawful purposes
-4. Installation and use on any device
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
 
-II. Prohibited Actions
-1. Decompilation, reverse engineering, or modification of the source code
-2. Offering this software as a SaaS/PaaS hosting service
-3. Renting, selling, or commercializing this software without authorization
-4. Removing, modifying, or obscuring copyright notices in the software
-5. Use for any illegal purposes
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
 
-III. Special Notes
-1. The developer reserves all rights
-2. This software is provided "as is", without any express or implied warranties
-3. The developer is not responsible for any losses arising from the use of this software
-4. The developer may update license terms in future versions
+3. Neither the name of the copyright holder nor the names of its
+   contributors may be used to endorse or promote products derived from
+   this software without specific prior written permission.
 
-IV. Termination of Agreement
-Violation of the terms of this agreement will automatically terminate your right to use.
-
-V. Open Source Plan
-This software is planned to convert to the BSD 3-Clause Open Source License on June 30, 2026.
-After conversion:
-- All source code will be publicly released
-- Modification, distribution, and commercial use will be permitted
-- Community contributions (Pull Requests) will be accepted
-- Only copyright notice and license terms need to be retained
-
-================================================================
-## Third-Party Component Statement
-
-### 1. U++ Framework Components
-This software uses portions of source code from U++ Framework (Ultimate++):
-- **Usage Method**: Depends on Core and plugin/z packages, exports and integrates source code from the U++ Core module
-- **License**: U++ uses the BSD License (full text available in UPP-LICENSE.md)
-- **Status**: The exported U++ source code is publicly accessible during the current phase
-- **Obligations**: All original copyright notices and license terms have been retained
-
-### 2. License Relationship Explanation
-- **U++ Code Portion**: Follows the original BSD License
-- **This Project's Original Code**: Follows this freeware license (currently), will transition to BSD 3-Clause in the future
-- **License Compatibility**: Fully compatible, no conflicts
-
-### 3. User Obligations
-When using this software, users must comply with both:
-1. All terms of this freeware license
-2. The BSD License terms of the U++ framework (see UPP-LICENSE.md)
-
-### 4. Future Changes
-When this software transitions to the BSD 3-Clause License on June 30, 2026:
-- This project's original code will adopt the BSD 3-Clause License
-- U++ code will continue to maintain its original BSD License
-- All source code will be made fully public
-
-================================================================
-
----
-Copyright © 2025 Du Jie (@ceepuka)
-Project Homepage: https://github.com/ceepuka/fjiffyldg
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
