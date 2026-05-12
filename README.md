@@ -1,8 +1,8 @@
-# Fjiffyldg
+# Fast File Library - Fjiffyldg
 
 > 🆓 Freeware | 🚀 Open Source | 📅 Opened: 2026-05-07 | 📚 [Chinese](README_ZH.md)
 
-**Fjiffyldg** is a cross-platform lightweight library for efficient large file loading and processing. It provides excellent low-level capabilities including random access to terabyte-scale files, intelligent file line index management (fully compatible with UTF-16/32 wide-character text files), and fast UTF-8 text detection. The design philosophy is **meet essential needs, leave no redundancy, with no complex memory management**.
+**Fjiffyldg (High-Performance File Operation Toolkit)** is a high-performance, cross-platform general-purpose file processing library. Specifically engineered for efficient loading of modern large files, it delivers low-overhead general file operations while maintaining a lightweight footprint. The library provides stable and reliable low-level support, fulfilling diverse file processing requirements across various application scenarios.
 
 <div align="center">
   
