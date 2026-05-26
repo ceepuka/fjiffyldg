@@ -22,9 +22,9 @@ struct fjiffyldg_t : public FilemodelInfo{};
 #endif
 
 // 过长行的临界值
-constexpr int CRITICAL_LONGLINE_LEN = (4 * KB);
+static constexpr int CRITICAL_LONGLINE_LEN = (4 * KB);
 // 分块单次文本加载默认缓冲区大小
-constexpr int BUFFER_SIZE = (128 * KB);
+static constexpr int BUFFER_SIZE = (128 * KB);
 
 FJIFFYLDG_API fjiffyldg_ptr fjiffyldg_create(void)
 {
@@ -279,123 +279,115 @@ FJIFFYLDG_API unsigned int CheckExtractTextUtf8(const char *text, unsigned int l
 	return (r ? r + slice : 0);
 }
 
-force_inline
-void FastCopyDataQword(qword* __restrict d, const qword* __restrict s, uint64 count)
+#if defined(_WIN64) || defined(__x86_64__) || defined(__ppc64__)
+	static constexpr int mapChunk = GB;
+	static constexpr int bufferSize = 4 * MB;
+#else
+	static constexpr int mapChunk = 128 * MB;
+	static constexpr int bufferSize = MB;
+#endif
+
+static bool FileDataIsEqual(const char *first, const char *second, int64 pos=0)
 {
-	for(uint64 i=0; i<count; i++){
-		*d = *s;
-		s++;
-		d++;
+	FileIn file1(first);
+	FileIn file2(second);
+	if(!file1.IsOpen() || !file2.IsOpen()) return false;
+	const int64 fileSize = file1.GetSize();
+	const int64 last = fileSize - 16*KB;
+	const int64 step = fileSize / 8;
+	file1.SetBufferSize(16*KB);
+	file2.SetBufferSize(16*KB);
+	Buffer<byte> data1(16*KB);
+	Buffer<byte> data2(16*KB);
+	while(pos<last){
+		file1.Seek(pos);
+		file2.Seek(pos);
+		if(file1.Get(data1, 16*KB) != 16*KB || file2.Get(data2, 16*KB) != 16*KB) return false;
+		if(memcmp(data1, data2, 16*KB)) return false;
+		pos += step;
 	}
-}
-force_inline
-void CopyDataUnaligned(byte* d, const byte* s, int8 len)
-{
-	int8 t = 0;
-	if(len & 4){
-		*(dword*)d = *(dword*)s;
-		t = 4;
-	}
-	
-	if(len & 2){
-		((word*)d)[t/2] = ((word*)s)[t/2];
-		t += 2;
-	}
-	
-	if(len & 1){
-		d[t] = s[t];
-	}
-}
-void UnlimitedFastCopyData(byte* __restrict d, const byte* __restrict s, uint64 len)
-{
-	FastCopyDataQword((qword*)d, (qword*)s, len / 8);
-	int8 rlen = len % 8;
-	if(!rlen) return;
-	/* if(rlen) for(int i=0; i<rlen; i++){
-		d[i] = s[i];
-	} */
-	CopyDataUnaligned((d + len - rlen), (s + len - rlen), rlen);
+	file1.Seek(last);
+	file2.Seek(last);
+	if(file1.Get(data1, 16*KB) != 16*KB || file2.Get(data2, 16*KB) != 16*KB) return false;
+	return !memcmp(data1, data2, 16*KB);
 }
 
-force_inline
-static bool DeepCopyFileMappingData(FileMapping& oldMap, FileMapping& newMap, int64 offset, int64 len)
+static bool FileDataIsEqualFastCompare(const char *first, const char *second)
 {
-	const byte* source;
-	byte* dest;
-	if(!(source = oldMap.Map(offset, len))
-		|| !(dest = newMap.Map(offset, len))) return false;
-	
-	UnlimitedFastCopyData(dest, source, len);
-	return true;
-}
-static bool FileCopyByFileMapping(const char *oldFileName, const char *newFileName)
-{
-	FileMapping oldMap(oldFileName);
-	FileMapping newMap;
-	int64 fileSize = oldMap.GetFileSize();
-	newMap.Create(newFileName, fileSize);
-	if(!oldMap.IsOpen() || !newMap.IsOpen()) return false;
-	uint64 offset = 0;
-	if(fileSize >= GB) while( offset + GB <= (uint64)fileSize ){
-		if(!DeepCopyFileMappingData(oldMap, newMap, offset, GB)) return false;
-		offset += GB;
+	FileMapping map1, map2;
+	if(map1.Open(first) && map2.Open(second)){
+		const int64 fileSize = map1.GetFileSize();
+		const int64 last = fileSize - 16*KB;
+		const int64 step = fileSize / 8;
+		const byte* data1;
+		const byte* data2;
+		int64 offset = 0;
+		for(int i=0; (i<8) && (data1 = map1.Map(offset, 16*KB))&&(data2 = map2.Map(offset, 16*KB)); i++){
+			if(memcmp(data1, data2, 16*KB)) return false;
+			offset += step;
+		}
+		if(offset == step * 8){
+			if((data1 = map1.Map(last, 16*KB)) && (data2 = map2.Map(last, 16*KB))) return !memcmp(data1, data2, 16*KB);
+			offset = last;
+		}
+		return FileDataIsEqual(first, second, offset);
 	}
-	
-	if(offset < fileSize){
-		return DeepCopyFileMappingData(oldMap, newMap, offset, fileSize - offset);
-	}
-	return true;
+	return FileDataIsEqual(first, second);
 }
 
 FJIFFYLDG_API int ToCloneFile(const char *oldFileName, const char *newFileName)
 {
 	const int64 fileSize = GetFileLength(oldFileName);
-	if(fileSize < 0) return -1;
-	if(fileSize > FilemodelInfo::USUALLY_IO_SIZE_MAX){
-		if(!FileCopyByFileMapping(oldFileName, newFileName)) return -1;
-	}
-	else{
-		if(!FileCopy(oldFileName, newFileName)) return -1;
-	}
-	if(fileSize != GetFileLength(newFileName)) return 1;	// 未正确复制
+	if(fileSize < 0 || String(oldFileName).IsEqual(newFileName)) return -1;
+	
+	if(fileSize > MB && fileSize == GetFileLength(newFileName)
+	&& FileGetTime(oldFileName).Compare(FileGetTime(newFileName)) == 0
+	&& FileDataIsEqualFastCompare(oldFileName, newFileName)) return 0;
+	
+	if(!FileCopy(oldFileName, newFileName)) return -1;
 	return 0;
 }
 
-force_inline
-static bool CopyDataByFileMapping(const byte *buffer, FileMapping& map, int64 offset, size_t maplen)
-{
-	byte* dest;
-	if(!(dest = map.Map(offset, maplen))) return false;
-	UnlimitedFastCopyData(dest, buffer, maplen);
-	return true;
-}
-static bool FileSaveByFileMapping(const char *fileName, const byte *buffer, int64 len)
-{
-	FileMapping map;
-	if(!map.Create(fileName, len)) return false;
-	uint64 offset = 0;
-	if(len >= GB) while( offset + GB <= (uint64)len ){
-		if(!CopyDataByFileMapping(buffer, map, offset, GB)) return false;
-		offset += GB;
-	}
-	
-	if(offset < len){
-		return CopyDataByFileMapping(buffer, map, offset, len - offset);
-	}
-	return true;
-}
+static constexpr int alignSize = (UINT_MAX<<12) & INT_MAX;
 
 FJIFFYLDG_API int ToSaveFile(const char *fileName, const char *buffer, long long len)
 {
 	if(len < 0) return -1;
-	if(len > FilemodelInfo::USUALLY_IO_SIZE_MAX){
-		if(!FileSaveByFileMapping(fileName, (byte*)buffer, len)) return -1;
+	
+	FileOut out(fileName);
+	if(!out.IsOpen() || out.IsError()) return -1;
+	out.SetSize(len);
+	out.SetBufferSize(bufferSize);
+	
+#if defined(_WIN64) || defined(__x86_64__) || defined(__ppc64__)
+	out.Put64(buffer, len);
+#else
+	int64 rem = len;
+	while(rem > alignSize){
+		out.Put(buffer, alignSize);
+		if(out.IsError()) return -1;
+		buffer += alignSize;
+		rem -= alignSize;
 	}
-	else{
-		if(!SaveFile(fileName, String(buffer, len))) return -1;
-	}
-	if(len != GetFileLength(fileName)) return 1;	// 未正确保存
+	out.Put(buffer, rem);
+#endif
+	out.Close();
+	if(!out.IsOK()) return -1;
+	
+	ASSERT(len == GetFileLength(fileName));	// 未正确保存
 	return 0;
+}
+
+force_inline
+static void AppendFileData(FileAppend &append, const char *buffer, long long len)
+{
+	while(len > alignSize){
+		append.Put(buffer, alignSize);
+		if(append.IsError()) return;
+		buffer += alignSize;
+		len -= alignSize;
+	}
+	append.Put(buffer, len);
 }
 
 FJIFFYLDG_API int ToAppendFile(const char *fileName, const char *buffer, long long len)
@@ -408,54 +400,80 @@ FJIFFYLDG_API int ToAppendFile(const char *fileName, const char *buffer, long lo
 	FileAppend append;
 	if(!append.Open(fileName)) return -1;
 	append.SetSize(fileSize + len);
-	append.SetBufferSize(8 * MB);
+	append.SetBufferSize(bufferSize);
+	AppendFileData(append, buffer, len);
 	
-	const int optimalChunk = (len > GB)? ( (len > 100 * (int64)GB)? 64 * MB : 16 * MB ) : (4 * MB);
-	int64 remain = len;
-	if(len > optimalChunk) while(remain > optimalChunk){
-		append.Put(buffer, optimalChunk);
-		remain -= optimalChunk;
-		buffer += optimalChunk;
-	}
-	append.Put(buffer, remain);
-	if(fileSize + len != GetFileLength(fileName)) return 1;	// 未正确保存
+	append.Close();
+	if(!append.IsOK()) return -1;
+	ASSERT(fileSize + len == GetFileLength(fileName));	// 未正确保存
 	return 0;
 }
 
 force_inline
-static int CatByFileMappingAppend(const char *catFileName, FileMapping& map, int64 offset, size_t maplen)
+static bool CatByFileMappingAppend(FileAppend &append, FileMapping& map, int64 offset, int maplen)
 {
-	byte* append;
-	if(!(append = map.Map(offset, maplen))) return -1;
-	return ToAppendFile(catFileName, (char*)append, maplen);
+	byte* data = map.Map(offset, maplen);
+	if(!data) return false;
+	append.Put(data, map.GetCount());
+	return append.IsOK();
 }
 
-FJIFFYLDG_API int ToConcatenateFile(const char *catFileName, const char *appendFileName)
+static constexpr int block = bufferSize * 32;
+static bool CatByFileStreamAppend(FileAppend &append, const char *fileName, int64 len, int writeShared)
 {
-	if(!FileExists(appendFileName)) return -1;
-	const int64 fileSize = GetFileLength(appendFileName);
-	int64 destSize = GetFileLength(catFileName);
-	if(destSize < 0) destSize = 0;
-	if( (fileSize < 0) || (destSize += fileSize) < 0) return -1;
+	FileStream file;
+	if(!file.Open(fileName, FileStream::READ|writeShared)
+	|| file.GetLeft()!=len) return false;
+	
+	file.SetBufferSize(bufferSize);
+	Buffer<byte> read((int)min<int64>(block, len));
+	for(int size = file.Get(read, (int)min<int64>(block, len)); size;){
+		append.Put(read, size);
+		if(append.IsError()) return false;
+		len -= size;
+		size = file.Get(read, (int)min<int64>(block, len));
+	}
+	
+	file.Close();
+	append.Close();
+	return (append.IsOK() && file.IsOK());
+}
+
+FJIFFYLDG_API int ToConcatenateFile(const char *catFileName, const char *secondFileName)
+{
+	const int64 fileSize = GetFileLength(secondFileName);
+	if(fileSize < 0) return -1;
+	
+	int64 destSize = (FileExists(catFileName) ? GetFileLength(catFileName) : 0);
+	if((destSize += fileSize) < 0) return -1;
+	
+	FileAppend append;
+	if(!append.Open(catFileName)) return -1;
+	append.SetSize(destSize);
+	append.SetBufferSize(bufferSize);
+	// Is itself ?
+	int writeShared = String(catFileName).IsEqual(secondFileName) ? 0 : FileStream::NOWRITESHARE;
+	
 	FileMapping map;
-	if(!map.Open(appendFileName)) return -1;
-	
-#if defined(_WIN64) || defined(__x86_64__) || defined(__ppc64__)
-	const int64 mapChunk = 4 * (int64)GB;
-#else
-	const int mapChunk = GB;
-#endif
-	
-	uint64 offset = 0;
-	if(fileSize > mapChunk) while( offset + mapChunk <= (uint64)fileSize ){
-		if(CatByFileMappingAppend(catFileName, map, offset, (size_t)mapChunk) != 0) return -1;
-		offset += mapChunk;
+	if(!map.Open(secondFileName, FileStream::READ | writeShared)
+	|| !CatByFileMappingAppend(append, map, 0, mapChunk)){
+		// 首次映射失败，改用流式操作
+		if(append.IsError() || !CatByFileStreamAppend(append, secondFileName, fileSize, writeShared)) return -1;
 	}
-	
-	if(offset < fileSize){
-		return CatByFileMappingAppend(catFileName, map, offset, (size_t)(fileSize - offset));
+	else{
+		int64 offset = mapChunk;
+		while( offset <= fileSize - mapChunk){
+			if(!CatByFileMappingAppend(append, map, offset, mapChunk)) return -1;
+			offset += mapChunk;
+		}
+		
+		if(offset < fileSize){
+			if(!CatByFileMappingAppend(append, map, offset, mapChunk)) return -1;
+		}
 	}
-	if(destSize != GetFileLength(catFileName)) return 1;	// 未正确连接
+	append.Close();
+	if(!append.IsOK()) return -1;
+	ASSERT(destSize == GetFileLength(catFileName));	// 未正确连接
 	return 0;
 }
 

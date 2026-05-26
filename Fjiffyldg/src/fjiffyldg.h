@@ -210,7 +210,7 @@ FJIFFYLDG_API	int ToAppendFile(const char *fileName, const char *buffer, long lo
 
 // Concatenates two files, appending second file's content to the first.
 // @return 0 on success, as stated above.
-FJIFFYLDG_API	int ToConcatenateFile(const char *catFileName, const char *appendFileName);
+FJIFFYLDG_API	int ToConcatenateFile(const char *catFileName, const char *secondFileName);
 
 #ifdef __cplusplus
 }
