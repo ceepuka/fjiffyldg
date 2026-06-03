@@ -179,7 +179,7 @@ FJIFFYLDG_API	long long GetFileSizeByteCount(const char *name);
 
 // Checks if the text contains only ASCII characters.
 // @return 0 if fully ASCII, otherwise the length of remaining non-ASCII text.
-FJIFFYLDG_API	unsigned int CheckTextASCII(const char *text, unsigned int len);
+FJIFFYLDG_API	unsigned int CheckTextASCII(const char * __restrict text, unsigned int len);
 
 // Validates complete UTF-8 text without truncation.
 // @return 0 if valid UTF-8, otherwise length of remaining invalid text.

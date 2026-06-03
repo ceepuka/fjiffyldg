@@ -18,6 +18,8 @@ class LineIndex {
 	Vector<uint32> direct;
 	Vector<int64> exdirect;	// 超大文件拓展
 	
+	int64 fileSize = -1;
+	String filename;
 	FileMapping map;
 	// 映射离散分区索引结构
 	struct LindexPos {
@@ -40,8 +42,8 @@ class LineIndex {
 	int64 lastpos = 0;
 	
 public:
-	RWMutex maplock, veclock;
-	inline FileMapping& GetFileMapOpen(const char *file) {map.Open(file); return map;}
+	RWMutex veclock;
+	inline FileMapping& GetFileMapOpen(const char *file) {fileSize = GetFileLength(file); filename = file; map.Open(file); return map;}
 	void AddLine(int64 pos);
 	// 根据行索引返回行的偏移位置
 	int64 GetLindexPos(int64 i, int utfmode = 0);

@@ -56,7 +56,7 @@ int64 LineIndex::GetLindexPos(int64 i, int utfmode)
 	else if(overstep){
 		pos = overstep;
 		l = chunk.Top().index + 1;
-		ml = map.GetFileSize() - pos;
+		ml = fileSize - pos;
 	}
 	else return -1;
 
@@ -66,28 +66,37 @@ int64 LineIndex::GetLindexPos(int64 i, int utfmode)
 		l = lastline;
 		pos = lastpos;
 	}
-	byte* buffer;
-	{
-		// 需要访问 map 加读锁保护
-		RWMutex::ReadLock lock(maplock);
-		
-		if(lnscanned){
-			buffer = map.Map(pos, ml);
-		}
-		else if(pos>=map.GetOffset() && (pos + ml) <= map.GetOffset()+map.GetCount()){
+	
+	byte* __restrict buffer=NULL;
+	if(map.IsOpen()){
+		if(pos>=map.GetOffset() && (pos + ml) <= map.GetOffset()+map.GetCount()){
 			buffer = ~map + pos - map.GetOffset();
 		}
-		else return -1;
-		
-		switch(utfmode){
-			// 考虑宽字符处理 utf-16 和 utf-32
-			case 1: pos += FindLinePosOffset((word *)buffer, l, i); break;		// utf16le
-			case 2: pos += FindLinePosOffset((word *)buffer, l, i, 1); break;	// utf16be
-			case 3: pos += FindLinePosOffset((dword *)buffer, l, i); break;		// utf32le
-			case 4: pos += FindLinePosOffset((dword *)buffer, l, i, 3); break;	// utf32be
-			default:
-				pos += FindLinePosOffset(buffer, l, i);
+		else{
+			if(ml == CHUNK_SIZE) ml = FILEBLOCK;
+			buffer = map.Map(pos, ml);
 		}
+	}
+	Buffer<byte> readfile;
+	if(!buffer && fileSize <= INT_MAX){
+		FileIn in(filename);
+		if(in.IsOpen()){
+			readfile.Alloc(ml);
+			buffer = readfile.Get();
+			in.Seek(pos);
+			if(!buffer || !in.Get(buffer, (int)ml)) {return -1;}
+		}
+	}
+	if(!buffer) return -1;	// 典型例如文件被其他应用程序修改，导致某些数据无法访问
+	
+	switch(utfmode){
+		// 考虑宽字符处理 utf-16 和 utf-32
+		case 1: pos += FindLinePosOffset((word *)buffer, l, i); break;		// utf16le
+		case 2: pos += FindLinePosOffset((word *)buffer, l, i, 1); break;	// utf16be
+		case 3: pos += FindLinePosOffset((dword *)buffer, l, i); break;		// utf32le
+		case 4: pos += FindLinePosOffset((dword *)buffer, l, i, 3); break;	// utf32be
+		default:
+			pos += FindLinePosOffset(buffer, l, i);
 	}
 	// 更新作为上次访问
 	lastline = i;
@@ -99,10 +108,23 @@ int64 LineIndex::GetLineLen(int64 i, int utfmode)
 {
 	if(!lnscanned || i >= lines || i < 0) return -1;
 	int64 pos = GetLindexPos(i, utfmode);
-	if(i+1 == lines) return map.GetFileSize() - pos;
+	if(i+1 == lines) return fileSize - pos;
 	
 	int64 len = GetLindexPos(i+1, utfmode) - pos;
-	byte* buffer = map.Map(pos, len);
+	byte* __restrict buffer = NULL;
+	if(map.IsOpen()) buffer = map.Map(pos, len);
+	Buffer<byte> readfile;
+	if(!buffer && fileSize <= INT_MAX){
+		FileIn in(filename);
+		if(in.IsOpen()){
+			readfile.Alloc(len);
+			buffer = readfile.Get();
+			in.Seek(pos);
+			if(!buffer || !in.Get(buffer, (int)len)) {return -1;}
+		}
+	}
+	if(!buffer) return -1;	// 典型例如文件被其他应用程序修改，导致某些数据无法访问
+	
 	switch(utfmode){
 		case 1: len -= GetNewlineByteCount((word *)(buffer + len), len); break;
 		case 2: len -= GetNewlineByteCount((word *)(buffer + len), len, 1); break;
@@ -116,7 +138,7 @@ int64 LineIndex::GetLineLen(int64 i, int utfmode)
 
 int64 LineIndex::GetLineByPos(int64 pos, int utfmode)
 {
-	if( !lnscanned || pos < 0 || pos > map.GetFileSize() ) return -1;
+	if( !lnscanned || pos < 0 || pos > fileSize ) return -1;
 	int64 i;
 	i = (pos <= (int64)UINT_MAX ? FindLowerBound(direct, pos) :
 	FindLowerBound(exdirect, pos) + direct.GetCount()) + 1;
@@ -152,8 +174,7 @@ void LineIndex::SetLinesInTotal()
 void LineIndex::ClearLineIndexStats()
 {
 	lnscanned = false;
-	if(direct.IsEmpty() && exdirect.IsEmpty())
-		return;
+	
 	direct.Clear();
 	exdirect.Clear();
 	chunk.Clear();
@@ -161,4 +182,5 @@ void LineIndex::ClearLineIndexStats()
 	lines = 1;
 	lastline = 0;
 	lastpos = 0;
+	filename.Clear();
 }

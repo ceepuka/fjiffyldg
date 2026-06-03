@@ -4,7 +4,7 @@
 // 大端时取最后字节，其他为第一个
 // 故 i 只能为 0, 1, 3
 template <typename T>
-inline bool IsNewlineLF(T c, byte i)
+force_inline bool IsNewlineLF(T c, byte i)
 {
 	dword LF = 0;
 	((byte*)&LF)[i] = '\n';
@@ -12,7 +12,7 @@ inline bool IsNewlineLF(T c, byte i)
 }
 
 template <typename T>
-inline bool IsNewlineCR(T c, byte i)
+force_inline bool IsNewlineCR(T c, byte i)
 {
 	dword CR = 0;
 	((byte*)&CR)[i] = '\r';
@@ -20,7 +20,7 @@ inline bool IsNewlineCR(T c, byte i)
 }
 
 template <typename T>
-inline bool IsReadNewlineChar(const T* &q, byte i)
+force_inline bool IsReadNewlineChar(const T* &q, byte i)
 {
 	if(IsNewlineCR(*q, i)){
 		// CRLF 时需跳过一个
@@ -42,7 +42,7 @@ int FindLinePosOffset(const T* buffer, int64 begin, int64 end, byte c=0)
 }
 
 template <typename T>
-inline int GetNewlineByteCount(const T* tail, int64 len, byte c=0)
+force_inline int GetNewlineByteCount(const T* tail, int64 len, byte c=0)
 { // tail 表示从行尾端检查，len 为行的存储长度
 	len -= sizeof(T);
 	if(len && IsNewlineLF(*(tail-1), c)  && IsNewlineCR(*(tail-2), c)) return sizeof(T) * 2;

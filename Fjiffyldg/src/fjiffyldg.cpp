@@ -24,7 +24,7 @@ struct fjiffyldg_t : public FilemodelInfo{};
 // 过长行的临界值
 static constexpr int CRITICAL_LONGLINE_LEN = (4 * KB);
 // 分块单次文本加载默认缓冲区大小
-static constexpr int BUFFER_SIZE = (128 * KB);
+static constexpr int READ_SIZE_FIXED = (128 * KB);
 
 FJIFFYLDG_API fjiffyldg_ptr fjiffyldg_create(void)
 {
@@ -94,7 +94,7 @@ FJIFFYLDG_API long long GetFileLineIndex(fjiffyldg_ptr fm, long long pos)
 FJIFFYLDG_API const char* ReadFileData(fjiffyldg_ptr fm, long long pos, unsigned int *len)
 {
 	uint32 length = *len;
-	if(!length) length = BUFFER_SIZE;
+	if(!length) length = READ_SIZE_FIXED;
 	const char* data = static_cast<FilemodelInfo*>(fm)->ReadData(pos, length);
 	*len = length;		// 返回实际读取字节数
 	return data;
@@ -111,7 +111,7 @@ FJIFFYLDG_API const char* ReadFileDataLLineCut(fjiffyldg_ptr fm, long long *inde
 	*bpos = begin;
 	
 	uint32 length = *len;
-	if(!length) length = BUFFER_SIZE;
+	if(!length) length = READ_SIZE_FIXED;
 	else if(length > UINT_MAX - 1 - CRITICAL_LONGLINE_LEN){
 		length = UINT_MAX - 1 - CRITICAL_LONGLINE_LEN;	// 限制取值大小防止溢出
 	}
@@ -177,35 +177,14 @@ FJIFFYLDG_API void ClearHugeBuffer(fjiffyldg_ptr fm)
 	static_cast<FilemodelInfo*>(fm)->ClearHuger();
 }
 
-force_inline bool IsASCIIChar(const char *&s, const char *const lim)
-{
-	while(s < lim){
-		if((*s & 0x80) != 0) return false;
-		s++;
-	}
-	return true;
-}
-
-FJIFFYLDG_API unsigned int CheckTextASCII(const char *text, unsigned int len)
+FJIFFYLDG_API unsigned int CheckTextASCII(const char * __restrict text, unsigned int len)
 {
 	const char *const end = text + len;
-	if(len < 8){
-		return IsASCIIChar(text, end)? 0 : end - text;
+	while(text < end){
+		if((*text & 0x80) != 0) break;
+		text++;
 	}
-	// 内存对齐
-	if(uint8 offset = (size_t)text % 8){
-		offset = 8 - offset;
-		if(! IsASCIIChar(text, text + offset)) return end - text;
-	}
-	while (end >= text + 8) {
-        if ((*(qword*)text & 0x8080808080808080) != 0){
-            while(!(*text & 0x80)) text++;
-            
-            return end - text;
-        }
-        text += 8;
-    }
-	return IsASCIIChar(text, end)? 0 : end - text;
+	return end - text;
 }
 
 template <class Target>
@@ -230,7 +209,7 @@ force_inline uint8 CheckUtf8SliceCharWidth(char c)
 static bool CheckIsUtf8(const char *s, const char *const lim, uint8 &w)
 {
 	w = CheckUtf8SliceCharWidth(*s);
-	if(!w || s + w > lim) return false;
+	if(!w || w > lim - s) return false;
 	uint8 slice = 1;
 	Utf8SliceCharHandle([s](uint8 p) {return s[p]; }, slice, w);
 	/*while( (slice < w) && ((0xC0 & s[slice]) == 0x80) ){
@@ -261,7 +240,6 @@ FJIFFYLDG_API unsigned int GetUtf8TextCharCount(const char * *text, unsigned int
 
 FJIFFYLDG_API unsigned int CheckExtractTextUtf8(const char *text, unsigned int len)
 {
-	if(!len) return 0;
 	// 最短有效截断长度为10字节
 	if(len < 10) return CheckWholeTextUtf8(text, len);
 	// 文本首尾截断字符的处理
@@ -449,10 +427,13 @@ FJIFFYLDG_API int ToConcatenateFile(const char *catFileName, const char *secondF
 	
 	FileAppend append;
 	if(!append.Open(catFileName)) return -1;
-	append.SetSize(destSize);
-	append.SetBufferSize(bufferSize);
 	// Is itself ?
-	int writeShared = String(catFileName).IsEqual(secondFileName) ? 0 : FileStream::NOWRITESHARE;
+	int writeShared = 0;
+	if(!String(catFileName).IsEqual(secondFileName)){
+		append.SetSize(destSize);
+		writeShared = FileStream::NOWRITESHARE;
+	}
+	append.SetBufferSize(bufferSize);
 	
 	FileMapping map;
 	if(!map.Open(secondFileName, FileStream::READ | writeShared)

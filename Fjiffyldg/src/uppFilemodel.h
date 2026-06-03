@@ -8,6 +8,10 @@ using namespace Upp;
 constexpr int KB = 1024;
 constexpr int MB = (1024 * KB);
 constexpr int GB = (1024 * MB);
+// 通用文件块
+constexpr int FILEBLOCK = 10 * MB;
+
+// #define WORD_SIZE_WIDTH sizeof(size_t)
 
 #include "FileLineIndex.h"
 #include "FileLineIndex.hpp"
@@ -18,9 +22,9 @@ class FilemodelBase{
 	int utfmode = 0;
 	// 文件行的索引处理
 	LineIndex linestats;
-	void ScanLineStats(FileMapping &map, int64 filesize);
+	template <class Target> void ScanLineStats(Target t, FileIn &scan);
 	
-	template <typename T> void UpdateLineStats(FileMapping &map, const T* q, byte &last, byte c = 0);
+	template <typename T> void UpdateLineStats(const T* q, int64 pos, int len, byte &last, byte c = 0);
 	
 protected:
 	Thread lnscan;
@@ -48,20 +52,16 @@ class FilemodelInfo : public FilemodelBase{
 	FileMapping fmap;
 	FileMapping huger;	// 最大限度地访问文件内容
 	int64 fsize = -1;
-	inline const char* GetFileData()const {return fsize > USUALLY_IO_SIZE_MAX ?
-										(const char*)fmap.Begin() : content.Begin();}
+	inline const char* GetFileData()const {return fmap.IsOpen() ? (const char*)fmap.Begin() : content.Begin();}
 	
 	const char* GetFileData(int64 offs, uint32& len) const;
-	inline int64 GetDataLength()const {return fsize > USUALLY_IO_SIZE_MAX ?
-										fmap.GetCount() : content.GetLength();}
+	inline int64 GetDataLength()const {return fmap.IsOpen() ? fmap.GetCount() : content.GetLength();}
 	
-	inline int64 GetDataPos()const {return fsize > USUALLY_IO_SIZE_MAX ?
-										fmap.GetOffset() : fin.GetPos()-content.GetLength();}
+	inline int64 GetDataPos()const {return fmap.IsOpen() ? fmap.GetOffset() : fin.GetPos()-content.GetLength();}
 	void ReloadData(int64 pos);
 
 public:
-	// 10MB 大小作为文件流式与映射访问的临界值
-	static inline constexpr int USUALLY_IO_SIZE_MAX = (10 * MB);
+	
 	FilemodelInfo();
 	inline bool IsLoaded()const {return fsize > -1;}
 	inline int64 GetFileSize()const {return fsize;}
