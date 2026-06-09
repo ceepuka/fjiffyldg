@@ -47,17 +47,17 @@ public:
 
 class FilemodelInfo : public FilemodelBase{
 	int errorcode = 0;
-	String content;
 	FileIn fin;
+	const byte* finBegin = NULL;
 	FileMapping fmap;
 	FileMapping huger;	// 最大限度地访问文件内容
 	int64 fsize = -1;
-	inline const char* GetFileData()const {return fmap.IsOpen() ? (const char*)fmap.Begin() : content.Begin();}
+	inline const char* GetFileData()const {return fmap.IsOpen() ? (const char*)fmap.Begin() : (const char*)finBegin;}
 	
 	const char* GetFileData(int64 offs, uint32& len) const;
-	inline int64 GetDataLength()const {return fmap.IsOpen() ? fmap.GetCount() : content.GetLength();}
+	inline int64 GetDataLength()const {return fmap.IsOpen() ? fmap.GetCount() : min<uint64>(fin.GetBufferSize(), fsize - fin.GetPos());}
 	
-	inline int64 GetDataPos()const {return fmap.IsOpen() ? fmap.GetOffset() : fin.GetPos()-content.GetLength();}
+	inline int64 GetDataPos()const {return fmap.IsOpen() ? fmap.GetOffset() : fin.GetPos();}
 	void ReloadData(int64 pos);
 
 public:

@@ -31,10 +31,12 @@ force_inline bool IsReadNewlineChar(const T* &q, byte i)
 }
 
 template <typename T>
-int FindLinePosOffset(const T* buffer, int64 begin, int64 end, byte c=0)
+int FindLinePosOffset(const T* buffer, int64 begin, int64 end, int64 lim, byte c=0)
 { // begin, end 分别表示起始行索引和目标行索引，c 表示字节偏移量
 	const T* q = buffer;
 	do{
+		if(lim < sizeof(T)) return -1;
+		lim -= sizeof(T);
 		if(IsReadNewlineChar(q, c)) begin++;
 		q++;
 	}while(begin < end);

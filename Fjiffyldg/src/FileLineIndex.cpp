@@ -67,37 +67,40 @@ int64 LineIndex::GetLindexPos(int64 i, int utfmode)
 		pos = lastpos;
 	}
 	
-	byte* __restrict buffer=NULL;
+	const byte* buffer = NULL;
 	if(map.IsOpen()){
 		if(pos>=map.GetOffset() && (pos + ml) <= map.GetOffset()+map.GetCount()){
 			buffer = ~map + pos - map.GetOffset();
 		}
 		else{
-			if(ml == CHUNK_SIZE) ml = FILEBLOCK;
-			buffer = map.Map(pos, ml);
+			int64 mapl = (overstep ? ml : FILEBLOCK);
+			buffer = map.Map(pos, mapl);
 		}
 	}
-	Buffer<byte> readfile;
-	if(!buffer && fileSize <= INT_MAX){
+	
+	Buffer<byte> data;
+	if(!buffer && !overstep){
+		data.Alloc(CHUNK_SIZE);
+		if(data.IsEmpty()) return -1;
 		FileIn in(filename);
-		if(in.IsOpen()){
-			readfile.Alloc(ml);
-			buffer = readfile.Get();
-			in.Seek(pos);
-			if(!buffer || !in.Get(buffer, (int)ml)) {return -1;}
-		}
+		in.Seek(pos);
+		ml = in.Get(data, CHUNK_SIZE);
+		if((int)ml <= 0) return -1;
+		buffer = data.Get();
 	}
 	if(!buffer) return -1;	// 典型例如文件被其他应用程序修改，导致某些数据无法访问
 	
+	int64 offset = pos;
 	switch(utfmode){
 		// 考虑宽字符处理 utf-16 和 utf-32
-		case 1: pos += FindLinePosOffset((word *)buffer, l, i); break;		// utf16le
-		case 2: pos += FindLinePosOffset((word *)buffer, l, i, 1); break;	// utf16be
-		case 3: pos += FindLinePosOffset((dword *)buffer, l, i); break;		// utf32le
-		case 4: pos += FindLinePosOffset((dword *)buffer, l, i, 3); break;	// utf32be
+		case 1:		// utf16le
+		case 2: pos += FindLinePosOffset((word *)buffer, l, i, ml, utfmode - 1); break;	// utf16be
+		case 3:		// utf32le
+		case 4: pos += FindLinePosOffset((dword *)buffer, l, i, ml, (utfmode ^ 7) & 3); break;	// utf32be
 		default:
-			pos += FindLinePosOffset(buffer, l, i);
+			pos += FindLinePosOffset(buffer, l, i, ml);
 	}
+	if(pos <= offset) return -1;
 	// 更新作为上次访问
 	lastline = i;
 	lastpos = pos;
@@ -108,28 +111,31 @@ int64 LineIndex::GetLineLen(int64 i, int utfmode)
 {
 	if(!lnscanned || i >= lines || i < 0) return -1;
 	int64 pos = GetLindexPos(i, utfmode);
+	if(pos < 0) return -1;
 	if(i+1 == lines) return fileSize - pos;
 	
 	int64 len = GetLindexPos(i+1, utfmode) - pos;
-	byte* __restrict buffer = NULL;
+	if(len <= 0) return -1;
+	const byte* buffer = NULL;
 	if(map.IsOpen()) buffer = map.Map(pos, len);
-	Buffer<byte> readfile;
-	if(!buffer && fileSize <= INT_MAX){
+	
+	Buffer<byte> data;
+	if(!buffer && len <= (dword)(INT_MAX ^ UINT_MAX) ){
+		data.Alloc(len);
+		if(data.IsEmpty()) return -1;
 		FileIn in(filename);
-		if(in.IsOpen()){
-			readfile.Alloc(len);
-			buffer = readfile.Get();
-			in.Seek(pos);
-			if(!buffer || !in.Get(buffer, (int)len)) {return -1;}
-		}
+		in.Seek(pos);
+		int size = in.Get(data, len);
+		if(size <= 0 || size < len) return -1;
+		buffer = data.Get();
 	}
 	if(!buffer) return -1;	// 典型例如文件被其他应用程序修改，导致某些数据无法访问
 	
 	switch(utfmode){
-		case 1: len -= GetNewlineByteCount((word *)(buffer + len), len); break;
-		case 2: len -= GetNewlineByteCount((word *)(buffer + len), len, 1); break;
-		case 3: len -= GetNewlineByteCount((dword *)(buffer + len), len); break;
-		case 4: len -= GetNewlineByteCount((dword *)(buffer + len), len, 3); break;
+		case 1:
+		case 2: len -= GetNewlineByteCount((word *)(buffer + len), len, utfmode - 1); break;
+		case 3:
+		case 4: len -= GetNewlineByteCount((dword *)(buffer + len), len, (utfmode ^ 7) & 3); break;
 		default:
 			len -= GetNewlineByteCount(buffer + len, len);
 	}
@@ -160,8 +166,11 @@ int64 LineIndex::GetLineByPos(int64 pos, int utfmode)
 	else{
 		index = ( !overstep ? chunk[CHUNK_COUNT_MAX - 2].index + 1 : chunk.Top().index + 1);
 	}
-	while(pos > GetLindexPos(index+1, utfmode))index++;
-	return (pos == GetLindexPos(index+1, utfmode)? index+1 : index);
+	while(pos > (uint64)GetLindexPos(index+1, utfmode) )index++;
+	
+	int64 p = GetLindexPos(index+1, utfmode);
+	if(p < 0) return -1;
+	return (pos == p? index+1 : index);
 }
 
 void LineIndex::SetLinesInTotal()

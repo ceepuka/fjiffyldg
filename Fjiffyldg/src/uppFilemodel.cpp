@@ -10,9 +10,10 @@ static constexpr int MMAP_FILECHUNK = 128 * MB;
 FilemodelInfo::FilemodelInfo()
 {
 #ifdef _DEBUG
-	Cout() << "Fjiffyldg debug version. \n";
+	LOG("Fjiffyldg debug version.");
 	StdLogSetup(LOG_FILE | LOG_APPEND | LOG_ELAPSED);
 #endif
+	LOG("File model Create!");
 }
 
 FilemodelInfo::~FilemodelInfo()
@@ -48,15 +49,17 @@ template <class Target>
 void FilemodelBase::ScanLineStats(Target t, FileIn &scan)
 {
 	byte last = 0;	// 表示已扫描过的块最后一个字节
-	Buffer<byte> data(MB);
-	if(data.IsEmpty()) return;
-	byte* &&buffer = data.Get();
-	do{
-		int64 checkl = scan.GetPos();
-		int size = scan.Get(buffer, MB);
-		if( ! linescanRunning.load(std::memory_order_relaxed)|| !size) return;
-		t(buffer, checkl, size, last);
-	}while(!scan.IsEof());
+	
+	int size;
+	int64 offset = scan.GetPos();
+	for(const byte* buffer = scan.GetSzPtr(size); size > 0 ;){
+		t((byte*)buffer, offset, size, last);
+		if( ! linescanRunning.load(std::memory_order_relaxed)) return;
+		
+		offset = scan.GetPos();
+		buffer = scan.GetSzPtr(size);
+	}
+	
 	if(last == '\r') linestats.AddLine(scan.GetPos());
 }
 
@@ -64,6 +67,13 @@ void FilemodelBase::BackstageFileLinesInitTask(const char *path, int64 offset, b
 {
 	FileIn scanFile;
 	const int64 filesize = GetFileLength(path);
+	
+#if defined(_WIN64) || defined(__x86_64__) || defined(__ppc64__)
+	scanFile.SetBufferSize((dword)minmax<int64>(filesize, 4096, MB));
+#else
+	scanFile.SetBufferSize((dword)minmax<int64>(filesize, 4096, 64 * KB));
+#endif
+	
 	if(offset<0 || offset>=filesize || !scanFile.Open(path)){
 		linescanRunning.store(false, std::memory_order_release);
 		return;
@@ -72,11 +82,6 @@ void FilemodelBase::BackstageFileLinesInitTask(const char *path, int64 offset, b
 	FileMapping &map = linestats.GetFileMapOpen(path);
 	if(!map.IsOpen()||!map.Map(0, FILEBLOCK)){
 		map.Close();
-		// 极端情况后台不扫描过大文件
-		if(filesize > INT_MAX){
-			linescanRunning.store(false, std::memory_order_release);
-			return;
-		}
 	}
 	
 	// 默认以 BOM 标签确定 utfmode
@@ -102,10 +107,10 @@ void FilemodelBase::BackstageFileLinesInitTask(const char *path, int64 offset, b
 	}
 	scanFile.Seek(offset);
 	switch(utfmode){
-		case 1:ScanLineStats([this](byte* buffer, int64 pos, int len, byte &last) {UpdateLineStats((word* )buffer, pos, len, last);}, scanFile);break;
-		case 2:ScanLineStats([this](byte* buffer, int64 pos, int len, byte &last) {UpdateLineStats((word* )buffer, pos, len, last, 1);}, scanFile);break;
-		case 3:ScanLineStats([this](byte* buffer, int64 pos, int len, byte &last) {UpdateLineStats((dword* )buffer, pos, len, last);}, scanFile);break;
-		case 4:ScanLineStats([this](byte* buffer, int64 pos, int len, byte &last) {UpdateLineStats((dword* )buffer, pos, len, last, 3);}, scanFile);break;
+		case 1:
+		case 2:ScanLineStats([this](byte* buffer, int64 pos, int len, byte &last) {UpdateLineStats((word* )buffer, pos, len, last, utfmode - 1);}, scanFile);break;
+		case 3:
+		case 4:ScanLineStats([this](byte* buffer, int64 pos, int len, byte &last) {UpdateLineStats((dword* )buffer, pos, len, last, (utfmode ^ 7) & 3);}, scanFile);break;
 		default:
 			ScanLineStats([this](byte* buffer, int64 pos, int len, byte &last) {UpdateLineStats(buffer, pos, len, last);}, scanFile);
 	}
@@ -121,7 +126,6 @@ void FilemodelBase::BackstageFileLinesInitTaskRun(const char *path, int64 offset
 	if( lnscan.Run([this, path, offset, utfverifiable]{
 	BackstageFileLinesInitTask(path, offset, utfverifiable);}) ){
 		linescanRunning.store(true, std::memory_order_release);
-		// Sleep(1);
 	}
 }
 
@@ -145,7 +149,7 @@ bool FilemodelInfo::uppGlobalLoadFileProcess(const char *path, bool scan)
 	errorcode = 0;
 	fsize = -1;
 
-	int64 size = GetFileLength(path);
+	const int64 size = GetFileLength(path);
 	if(size<0){
 		LOG("Error: File'"<< path <<"'does not exist!");
 		errorcode = -1;
@@ -159,13 +163,20 @@ bool FilemodelInfo::uppGlobalLoadFileProcess(const char *path, bool scan)
 	// 大文件优化的加载方式
 	if(!fmap.Open(path) || !(size<MMAP_FILECHUNK ? fmap.Map() : fmap.Map(0,MMAP_FILECHUNK))){
 		fmap.Close();
+		fin.SetBufferSize((dword)minmax<int64>(size, 4096, FILEBLOCK));
 		fin.Open(path);
-		if(!fin.IsOpen()){
+		if(fin.GetSize()!= size || fin.Peek() < 0){
 			LOG("Error: File'"<< path <<"'is inaccessible!");
 			errorcode = 1;
 			return false;
 		}
-		content = fin.Get(FILEBLOCK);
+		finBegin = fin.PeekPtr();
+	}
+	else{
+		if(fmap.GetFileSize()!= size){
+			errorcode = 1;
+			return false;
+		}
 	}
 	fsize = size;
 	return true;
@@ -180,13 +191,12 @@ static force_inline int64 calDistance(int64 raw, uint32 base)
 void FilemodelInfo::ReloadData(int64 pos)
 {
 	if(fin.IsOpen()){
-		if(int64 rem = fin.GetPos()%FILEBLOCK) fin.SeekCur(-rem);
 		int64 l = pos - fin.GetPos();
-		fin.SeekCur(calDistance(l, FILEBLOCK));
-		content = fin.Get(FILEBLOCK);
+		fin.SeekCur(calDistance(l, fin.GetBufferSize()) );
+		finBegin = (fin.Peek() >= 0 ? fin.PeekPtr() : NULL);
 	}
 	else{
-		int64 l = pos-fmap.GetOffset();
+		int64 l = pos - fmap.GetOffset();
 		fmap.Map(fmap.GetOffset()+calDistance(l,MMAP_FILECHUNK), MMAP_FILECHUNK);
 	}
 }

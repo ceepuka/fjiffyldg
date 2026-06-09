@@ -64,9 +64,8 @@ FJIFFYLDG_API	void fjiffyldg_clear(fjiffyldg_ptr fm);
 /* File Loading Error Codes:
  *  0: Success (no error)
  * -1: File does not exist or was never loaded
- *  1: File content or attributes inaccessible
- *  2: File stream error
- *  3: Memory-mapped file error
+ *  1: The file may have been modified
+ *
  */
 
 // Loads file content while building its line index structure.
@@ -179,7 +178,7 @@ FJIFFYLDG_API	long long GetFileSizeByteCount(const char *name);
 
 // Checks if the text contains only ASCII characters.
 // @return 0 if fully ASCII, otherwise the length of remaining non-ASCII text.
-FJIFFYLDG_API	unsigned int CheckTextASCII(const char *text, unsigned int len);
+FJIFFYLDG_API	unsigned int CheckTextASCII(const char * text, unsigned int len);
 
 // Validates complete UTF-8 text without truncation.
 // @return 0 if valid UTF-8, otherwise length of remaining invalid text.
@@ -197,20 +196,20 @@ FJIFFYLDG_API	unsigned int CheckExtractTextUtf8(const char *text, unsigned int l
 FJIFFYLDG_API	unsigned int GetUtf8TextCharCount(const char * *text, unsigned int len);
 
 // Copies a file.
-// @return 0 on success, 1 if file does not meet expectations, negative for more severe errors.
+// @return 0 on success.
 FJIFFYLDG_API	int ToCloneFile(const char *oldFileName, const char *newFileName);
 
 // Saves specified data content to a file.
-// @return 0 on success, as stated above.
+// @return 0 on success.
 FJIFFYLDG_API	int ToSaveFile(const char *fileName, const char *buffer, long long len);
 
 // Appends specified data to a file.
-// @return 0 on success, as stated above.
+// @return 0 on success.
 FJIFFYLDG_API	int ToAppendFile(const char *fileName, const char *buffer, long long len);
 
 // Concatenates two files, appending second file's content to the first.
-// @return 0 on success, as stated above.
-FJIFFYLDG_API	int ToConcatenateFile(const char *catFileName, const char *appendFileName);
+// @return 0 on success.
+FJIFFYLDG_API	int ToConcatenateFile(const char *catFileName, const char *secondFileName);
 
 #ifdef __cplusplus
 }

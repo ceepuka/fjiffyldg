@@ -177,7 +177,7 @@ FJIFFYLDG_API void ClearHugeBuffer(fjiffyldg_ptr fm)
 	static_cast<FilemodelInfo*>(fm)->ClearHuger();
 }
 
-FJIFFYLDG_API unsigned int CheckTextASCII(const char * __restrict text, unsigned int len)
+FJIFFYLDG_API unsigned int CheckTextASCII(const char * text, unsigned int len)
 {
 	const char *const end = text + len;
 	while(text < end){
@@ -267,14 +267,15 @@ FJIFFYLDG_API unsigned int CheckExtractTextUtf8(const char *text, unsigned int l
 
 static bool FileDataIsEqual(const char *first, const char *second, int64 pos=0)
 {
-	FileIn file1(first);
-	FileIn file2(second);
-	if(!file1.IsOpen() || !file2.IsOpen()) return false;
+	FileIn file1;
+	FileIn file2;
+	file1.SetBufferSize(16*KB);
+	file2.SetBufferSize(16*KB);
+	if(!file1.Open(first) || !file2.Open(second)) return false;
 	const int64 fileSize = file1.GetSize();
 	const int64 last = fileSize - 16*KB;
 	const int64 step = fileSize / 8;
-	file1.SetBufferSize(16*KB);
-	file2.SetBufferSize(16*KB);
+	
 	Buffer<byte> data1(16*KB);
 	Buffer<byte> data2(16*KB);
 	while(pos<last){
@@ -332,10 +333,11 @@ FJIFFYLDG_API int ToSaveFile(const char *fileName, const char *buffer, long long
 {
 	if(len < 0) return -1;
 	
-	FileOut out(fileName);
-	if(!out.IsOpen() || out.IsError()) return -1;
+	FileOut out;
+	out.SetBufferSize((dword)minmax<int64>(len, 4096, bufferSize));
+	if(!out.Open(fileName)) return -1;
 	out.SetSize(len);
-	out.SetBufferSize(bufferSize);
+	if(out.IsError()) return -1;
 	
 #if defined(_WIN64) || defined(__x86_64__) || defined(__ppc64__)
 	out.Put64(buffer, len);
@@ -376,9 +378,10 @@ FJIFFYLDG_API int ToAppendFile(const char *fileName, const char *buffer, long lo
 	if(fileSize < 0 || fileSize + len < 0) return -1;
 	
 	FileAppend append;
+	append.SetBufferSize((dword)minmax<int64>(len, 4096, bufferSize));
 	if(!append.Open(fileName)) return -1;
 	append.SetSize(fileSize + len);
-	append.SetBufferSize(bufferSize);
+	if(append.IsError()) return -1;
 	AppendFileData(append, buffer, len);
 	
 	append.Close();
@@ -396,20 +399,17 @@ static bool CatByFileMappingAppend(FileAppend &append, FileMapping& map, int64 o
 	return append.IsOK();
 }
 
-static constexpr int block = bufferSize * 32;
-static bool CatByFileStreamAppend(FileAppend &append, const char *fileName, int64 len, int writeShared)
+static bool CatByFileStreamAppend(FileAppend &append, const char *fileName, int64 &len, int writeShared)
 {
 	FileStream file;
+	file.SetBufferSize((dword)minmax<int64>(len, 4096, bufferSize));
 	if(!file.Open(fileName, FileStream::READ|writeShared)
-	|| file.GetLeft()!=len) return false;
-	
-	file.SetBufferSize(bufferSize);
-	Buffer<byte> read((int)min<int64>(block, len));
-	for(int size = file.Get(read, (int)min<int64>(block, len)); size;){
+	|| !(len = file.GetSize()) ) return false;
+	int size;
+	for(const byte* read = file.GetSzPtr(size); size > 0 ;){
 		append.Put(read, size);
 		if(append.IsError()) return false;
-		len -= size;
-		size = file.Get(read, (int)min<int64>(block, len));
+		read = file.GetSzPtr(size);
 	}
 	
 	file.Close();
@@ -419,21 +419,20 @@ static bool CatByFileStreamAppend(FileAppend &append, const char *fileName, int6
 
 FJIFFYLDG_API int ToConcatenateFile(const char *catFileName, const char *secondFileName)
 {
-	const int64 fileSize = GetFileLength(secondFileName);
+	int64 fileSize = GetFileLength(secondFileName);
 	if(fileSize < 0) return -1;
 	
 	int64 destSize = (FileExists(catFileName) ? GetFileLength(catFileName) : 0);
-	if((destSize += fileSize) < 0) return -1;
+	if((destSize + fileSize) < 0) return -1;
 	
 	FileAppend append;
-	if(!append.Open(catFileName)) return -1;
+	append.SetBufferSize((dword)minmax<int64>(fileSize, 4096, bufferSize));
+	if(!append.Open(catFileName) || !(destSize = append.GetSize())) return -1;
 	// Is itself ?
 	int writeShared = 0;
 	if(!String(catFileName).IsEqual(secondFileName)){
-		append.SetSize(destSize);
 		writeShared = FileStream::NOWRITESHARE;
 	}
-	append.SetBufferSize(bufferSize);
 	
 	FileMapping map;
 	if(!map.Open(secondFileName, FileStream::READ | writeShared)
@@ -442,6 +441,7 @@ FJIFFYLDG_API int ToConcatenateFile(const char *catFileName, const char *secondF
 		if(append.IsError() || !CatByFileStreamAppend(append, secondFileName, fileSize, writeShared)) return -1;
 	}
 	else{
+		fileSize = map.GetFileSize();
 		int64 offset = mapChunk;
 		while( offset <= fileSize - mapChunk){
 			if(!CatByFileMappingAppend(append, map, offset, mapChunk)) return -1;
@@ -454,7 +454,7 @@ FJIFFYLDG_API int ToConcatenateFile(const char *catFileName, const char *secondF
 	}
 	append.Close();
 	if(!append.IsOK()) return -1;
-	ASSERT(destSize == GetFileLength(catFileName));	// 未正确连接
+	ASSERT(destSize + fileSize == GetFileLength(catFileName));	// 未正确连接
 	return 0;
 }
 

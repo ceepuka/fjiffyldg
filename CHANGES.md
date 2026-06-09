@@ -5,6 +5,21 @@ This document records the release history of the Fjiffyldg project.
 
 ---
 
+## [1.0.5] - 2026-06-09
+### 重大改进：大幅优化重构 / Major Improvements: Significant Optimization and Refactoring
+
+项目进行了关键性能与稳定性的更新，我们强烈建议您尽快升级至该版本！
+The project has undergone critical updates regarding performance and stability. We strongly recommend upgrading to this version as soon as possible!
+
+- **核心重构 / Core Refactoring**：现在完全采用内存映射文件访问优先的策略，若映射失败则回退至文件流访问。
+  Now fully adopts a memory-mapped file access-first strategy, falling back to file stream access if mapping fails.
+- **性能优化 / Performance Optimization**：减少了数据拷贝次数，且对部分循环判断逻辑做了优化。
+  Reduced the number of data copies and optimized some loop judgment logic.
+- **错误处理 / Error Handling**：简化了部分接口函数错误处理逻辑，你完全可以只用关心操作是否成功，不必再专门为此考虑更底层的情况了。
+  Simplified the error handling logic of some interface functions. You can now focus solely on whether the operation was successful, without needing to consider lower-level details.
+
+---
+
 ## [1.0.2] - 2026-05-07
 ### 🚀 里程碑：正式开源 / Open Source Release
 
